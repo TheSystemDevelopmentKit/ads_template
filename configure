@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+#############################################################################
+# Template configure for entities requiring ADS simulations
+# written by Veeti Lahtinen 08/01/2022
+#############################################################################
+THISDIR=$( cd `dirname $0` && pwd )
+MODULE=$( basename ${THISDIR})
+
+#Defines TheSDK environment variables
+. ${THISDIR}/../../TheSDK.config
+
+CELL=${MODULE}
+SOURCELIB=${CELL}_generated
+ADSDIR="${THISDIR}/ads"
+
+mkdir -p ${ADSDIR}/data
+mkdir -p ${THISDIR}/Simulations/adssim
+
+${THISDIR}/link_oa_design.sh -l "${VIRTUOSO_DIR}/${SOURCELIB}" -t "${ADSSUBSTRATEFILE}" -w "${ADSDIR}"
+
+if [ ! -d "$VIRTUOSO_DIR/$SOURCELIB/$CELL/emSetup" ]; then 
+    mkdir $VIRTUOSO_DIR/$SOURCELIB/$CELL/emSetup
+fi
+
+if [ ! -f "$VIRTUOSO_DIR/$SOURCELIB/$CELL/emSetup/master.tag" ]; then 
+cat << EOF > "$VIRTUOSO_DIR/$SOURCELIB/$CELL/emSetup/master.tag"
+-- Master.tag File, Rev:1.0
+eesof_em_setup.file
+EOF
+fi
+
+if [ ! -f "$VIRTUOSO_DIR/$SOURCELIB/$CELL/emSetup/eesof_em_setup.file" ]; then
+cat << EOF > "$VIRTUOSO_DIR/$SOURCELIB/$CELL/emSetup/eesof_em_setup.file"
+# Ensuring Version Control does not get an empty file. #
+# My magic number is 156.                              #
+EOF
+fi
+
+echo "Generating emStateFile"
+echo ${EMSTATEFILE}
+cat ${EMSTATEFILE} | \
+    sed -e "s/#CELL_placeholder#/$CELL/g" \
+    -e "s/#SOURCELIB_placeholder#/$SOURCELIB/g" \
+    -e "s#WORKSPACE_placeholder#$THISDIR/$ADSDIR#g" \
+    > "$VIRTUOSO_DIR/$SOURCELIB/$CELL/emSetup/emStateFile.xml"
+
+cat << EOF > ${ADSDIR}/init.ael
+de_open_workspace("${ADSDIR}"); // open correct folder 
+dex_em_writeSimulationFiles("${SOURCELIB}","${CELL}","emSetup","simulation"); // Generate simulation input files
+de_exit(); // Close ADS
+EOF
+
+CURRENTFILE=${THISDIR}/Makefile
+echo "Generating Makefile"
+
+cat << EOF > ${THISDIR}/Makefile
+
+#.PHONY: all sim clean
+.PHONY: all sim doc clean
+
+all: sim
+
+sim:
+	cd ${THISDIR}/${MODULE} && \\
+	${PYL} __init__.py
+
+doc:
+	cd $THISDIR/doc && \\
+	make html
+
+clean:
+	rm -rf ${THISDIR}/simulations/* 
+   
+EOF
+exit 0
+
