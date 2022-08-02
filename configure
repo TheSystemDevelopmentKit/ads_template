@@ -39,8 +39,8 @@ fi
 echo "Generating emStateFile"
 echo ${EMSTATEFILE}
 cat ${EMSTATEFILE} | \
-    sed -e "s/#CELL_placeholder#/$CELL/g" \
-    -e "s/#SOURCELIB_placeholder#/$SOURCELIB/g" \
+    sed -e "s/CELL_placeholder/$CELL/g" \
+    -e "s/WORKSPACE_placeholder_lib/$SOURCELIB/g" \
     -e "s#WORKSPACE_placeholder#$THISDIR/$ADSDIR#g" \
     > "$VIRTUOSO_DIR/$SOURCELIB/$CELL/emSetup/emStateFile.xml"
 
