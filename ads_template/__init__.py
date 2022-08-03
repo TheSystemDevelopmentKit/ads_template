@@ -1,7 +1,7 @@
 """
-=========
+============
 ads_template
-=========
+============
 
 ads_template model template The System Development Kit
 Used as a template for all TheSyDeKick Entities.
